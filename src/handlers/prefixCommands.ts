@@ -57,6 +57,9 @@ export async function handlePrefixCommand(message: Message): Promise<void> {
       case "queue":
         await runList(message);
         break;
+      case "help":
+        await runHelp(message);
+        break;
       default:
         // Not one of ours; ignore silently (could be another bot's prefix).
         break;
@@ -176,6 +179,23 @@ async function runList(message: Message): Promise<void> {
     queue: "เล่นซ้ำคิวทั้งหมดฮะ",
   };
   lines.push("", `Loop mode ตอนนี้: **${loopLabels[loop] ?? loop}**`);
+
+  await message.reply(lines.join("\n"));
+}
+
+async function runHelp(message: Message): Promise<void> {
+  const p = config.commandPrefix;
+  const lines = [
+    "**คำสั่งของ Bard ฮะ**",
+    `\`${p}p <url>\` — เล่นเพลง หรือคิว playlist จาก URL ฮะ (ลิงค์ playlist จะถามว่าเอาแค่เพลงแรกหรือทั้งลิสต์)`,
+    `\`${p}skip\` — ข้ามเพลงปัจจุบันฮะ`,
+    `\`${p}loop <off|song|queue>\` — ตั้ง loop mode ฮะ`,
+    `\`${p}list\` — ดูคิวเพลงตอนนี้ฮะ`,
+    `\`${p}leave\` — ให้ Bard ออกจากห้องเสียงฮะ`,
+    `\`${p}help\` — ดูคำสั่งทั้งหมดฮะ (อันนี้แหละ)`,
+    "",
+    "ใช้ slash command (`/play`, `/skip`, `/loop`, `/list`, `/stop`) ก็ได้เหมือนกันฮะ",
+  ];
 
   await message.reply(lines.join("\n"));
 }
