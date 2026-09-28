@@ -11,7 +11,7 @@ FROM node:22-bookworm-slim AS builder
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 make g++ \
+    && apt-get install -y --no-install-recommends python3 make g++ curl unzip \
     && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json* ./
@@ -23,6 +23,21 @@ RUN npm run build
 
 # Drop dev dependencies so stage 2 only copies what's actually needed.
 RUN npm prune --omit=dev
+
+# ---------------------------------------------------------------------------
+# bgutil PO token provider yt-dlp plugin: YouTube now requires a proof-of-
+# origin token for audio-only formats requested from datacenter/server IPs
+# (this is separate from, and in addition to, the --js-runtimes signature
+# challenge below). This plugin lets yt-dlp fetch a valid token from the
+# bgutil-provider sidecar container (see docker-compose.yml) instead of
+# getting HTTP 403s. Extracted here, standalone yt-dlp (the binary
+# youtube-dl-exec downloads) loads plugins from ~/.config/yt-dlp/plugins.
+# ---------------------------------------------------------------------------
+RUN mkdir -p /tmp/yt-dlp-plugins \
+    && curl -fsSL -o /tmp/bgutil-plugin.zip \
+       https://github.com/Brainicism/bgutil-ytdlp-pot-provider/releases/latest/download/bgutil-ytdlp-pot-provider.zip \
+    && unzip -q /tmp/bgutil-plugin.zip -d /tmp/yt-dlp-plugins \
+    && rm /tmp/bgutil-plugin.zip
 
 
 # ---------------------------------------------------------------------------
@@ -46,6 +61,7 @@ WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY package.json ./
+COPY --from=builder /tmp/yt-dlp-plugins /home/node/.config/yt-dlp/plugins
 
 # The temp/ download-play-delete working directory. It's declared as a
 # volume so it never bakes into (or bloats) an image layer — files written
@@ -53,7 +69,7 @@ COPY package.json ./
 # not in the container's writable layer, and `docker build` never touches it.
 # node:*-bookworm-slim already ships a non-root "node" user (uid/gid 1000),
 # so we reuse it instead of creating a new one.
-RUN mkdir -p /app/temp && chown -R node:node /app
+RUN mkdir -p /app/temp && chown -R node:node /app /home/node/.config
 VOLUME ["/app/temp"]
 
 USER node

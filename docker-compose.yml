@@ -5,6 +5,8 @@ services:
       dockerfile: Dockerfile
     container_name: discord-music-bot
     restart: unless-stopped
+    depends_on:
+      - bgutil-provider
     env_file:
       - .env
     environment:
@@ -20,6 +22,23 @@ services:
     # confirmed the bot runs cleanly in your environment.
     security_opt:
       - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Mints YouTube PO (proof-of-origin) tokens on demand. YouTube requires
+  # these for audio-only downloads from datacenter/server IPs, separately
+  # from the JS-signature challenge yt-dlp already solves via
+  # --js-runtimes. music-bot reaches this by its service name, "bgutil-
+  # provider", over the default compose network — see YT_DLP_EXTRA_ARGS
+  # in .env.
+  bgutil-provider:
+    image: brainicism/bgutil-ytdlp-pot-provider:latest
+    container_name: bgutil-provider
+    init: true
+    restart: unless-stopped
     logging:
       driver: json-file
       options:
