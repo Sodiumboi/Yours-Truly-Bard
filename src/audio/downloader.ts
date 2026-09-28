@@ -100,23 +100,31 @@ export async function fetchPlaylistEntries(url: string): Promise<PlaylistEntry[]
 }
 
 /**
- * Downloads a single track's audio into the temp directory as an mp3 and
- * returns the absolute file path. Each call gets a unique filename (even for
- * the same URL queued twice via loop mode) so concurrent pre-fetch/playback
- * never collide.
+ * Downloads a single track's audio into the temp directory as an Ogg/Opus
+ * file and returns the absolute file path. Opus (not mp3) so playback can
+ * hand the file straight to Discord's voice pipeline with
+ * StreamType.OggOpus (demux only) instead of StreamType.Arbitrary, which
+ * would spawn a real-time ffmpeg transcode (decode -> PCM -> re-encode) on
+ * every play. That live transcode is CPU-heavy and, on a nested LXC-in-
+ * Proxmox host, any scheduling jitter during it makes Opus frames arrive
+ * late \u2014 which shows up on Discord's side as NACKs and dropped packets.
+ * Encoding once here, off the real-time playback path, avoids that.
+ *
+ * Each call gets a unique filename (even for the same URL queued twice via
+ * loop mode) so concurrent pre-fetch/playback never collide.
  */
 export async function downloadTrackAudio(url: string): Promise<string> {
   await ensureTempDir();
 
   const uniqueId = crypto.randomUUID();
   const outputTemplate = path.join(config.tempDir, `${uniqueId}.%(ext)s`);
-  const finalPath = path.join(config.tempDir, `${uniqueId}.mp3`);
+  const finalPath = path.join(config.tempDir, `${uniqueId}.opus`);
 
   logger.info({ url, finalPath }, "Downloading track audio");
 
   await ytdl(url, {
     extractAudio: true,
-    audioFormat: "mp3",
+    audioFormat: "opus",
     audioQuality: 0,
     noPlaylist: true,
     output: outputTemplate,

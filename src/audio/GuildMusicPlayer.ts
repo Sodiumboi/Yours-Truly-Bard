@@ -212,8 +212,11 @@ export class GuildMusicPlayer {
 
   private play(track: DownloadedTrack): void {
     logger.info({ title: track.title, guildId: this.guildId }, "Playing track");
+    // Files are downloaded pre-encoded as Ogg/Opus (see downloadTrackAudio),
+    // so this only demuxes the container \u2014 no live transcoding, which is
+    // what keeps frame timing tight enough to avoid NACKs/dropped packets.
     const resource: AudioResource = createAudioResource(track.filePath, {
-      inputType: StreamType.Arbitrary,
+      inputType: StreamType.OggOpus,
     });
     this.audioPlayer.play(resource);
   }
