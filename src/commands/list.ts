@@ -7,13 +7,13 @@ import type { Command } from "./Command";
 const MAX_LISTED = 15;
 
 const command: Command = {
-  data: new SlashCommandBuilder().setName("list").setDescription("Show the current queue"),
+  data: new SlashCommandBuilder().setName("list").setDescription("แสกนคิวเพลงที่กำลังเล่นอยู่ฮะ"),
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const player = playerManager.get(interaction.guildId!);
 
     if (!player || (!player.getStatus().current && player.getStatus().queue.length === 0)) {
-      await interaction.reply({ content: "The queue is empty.", ephemeral: true });
+      await interaction.reply({ content: "คิวว่าง ฮะ", ephemeral: true });
       return;
     }
 
@@ -21,20 +21,25 @@ const command: Command = {
 
     const lines: string[] = [];
     if (current) {
-      lines.push(`**Now Playing:** ${current.title} \`[${formatDuration(current.durationSeconds)}]\` — requested by ${current.requestedBy}`);
+      lines.push(`**ตอนนี้กำลังเล่น:** ${current.title} \`[${formatDuration(current.durationSeconds)}]\` — คนขอ: ${current.requestedBy}`);
     }
 
     if (queue.length > 0) {
-      lines.push("", "**Up Next:**");
+      lines.push("", "**อ่ะต่อไป:**");
       queue.slice(0, MAX_LISTED).forEach((track, index) => {
         lines.push(`${index + 1}. ${track.title} \`[${formatDuration(track.durationSeconds)}]\` — ${track.requestedBy}`);
       });
       if (queue.length > MAX_LISTED) {
-        lines.push(`...and ${queue.length - MAX_LISTED} more.`);
+        lines.push(`...อีก ${queue.length - MAX_LISTED} คิว`);
       }
     }
 
-    lines.push("", `Loop mode: **${loop}**`);
+    const loopLabels: Record<string, string> = {
+      none: "ปิดฮะ",
+      song: "แค่เพลงปัจจุบันฮะ",
+      queue: "เล่นซ้ำคิวทั้งหมดฮะ",
+    };
+    lines.push("", `Loop mode ตอนนี้: **${loopLabels[loop] ?? loop}**`);
 
     await interaction.reply(lines.join("\n"));
   },

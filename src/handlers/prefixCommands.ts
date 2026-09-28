@@ -63,13 +63,13 @@ export async function handlePrefixCommand(message: Message): Promise<void> {
     }
   } catch (err) {
     logger.error({ err, command }, "Prefix command failed");
-    await message.reply("Something went wrong running that command.").catch(() => {});
+    await message.reply("เห้ย มีอะไรพังฮะ ลองใหม่อีกทีนะ").catch(() => {});
   }
 }
 
 async function runPlay(message: Message, url: string): Promise<void> {
   if (!url) {
-    await message.reply(`Usage: \`${config.commandPrefix}p <youtube url>\``);
+    await message.reply(`ใช้แบบนี้ฮะ: \`${config.commandPrefix}p <youtube url>\``);
     return;
   }
 
@@ -81,19 +81,23 @@ async function runPlay(message: Message, url: string): Promise<void> {
     return;
   }
 
-  const statusMessage = await message.reply("Fetching track info...");
+  const statusMessage = await message.reply("กำลังหาข้อมูลเพลงฮะ...");
 
   try {
     const track = await fetchSingleVideoMetadata(url, message.author.toString());
     const player = playerManager.getOrCreate(message.guildId!);
 
+    if (message.channel.isSendable()) {
+      player.setNotifyChannel(message.channel);
+    }
+
     await player.connect(channel);
     await player.enqueue([track]);
 
-    await statusMessage.edit(`Queued **${track.title}**.`);
+    await statusMessage.edit(`คิว **${track.title}** ไว้แล้วฮะ`);
   } catch (err) {
     logger.error({ err, url }, "Failed to queue track");
-    await statusMessage.edit("Couldn't fetch that URL. Double-check it's a valid, public video link.");
+    await statusMessage.edit("เจ๊งฮะ เปิดลิงค์ไม่ได้ฮะ เหมือนจะเป็นลิงค์ส่วนตัวหรือไม่สามารถเข้าถึงได้ฮะ");
   }
 }
 
@@ -101,11 +105,11 @@ async function runSkip(message: Message): Promise<void> {
   const player = playerManager.get(message.guildId!);
 
   if (!player || !player.skip()) {
-    await message.reply("Nothing is playing right now.");
+    await message.reply("ไม่มีอะไรให้ข้ามแล้วฮะ หมดคิวแล้ว");
     return;
   }
 
-  await message.reply("Skipped.");
+  await message.reply("ข้ามแล้วฮะ");
 }
 
 async function runLoop(message: Message, arg: string): Promise<void> {
@@ -113,7 +117,7 @@ async function runLoop(message: Message, arg: string): Promise<void> {
   const mode = LOOP_ALIASES[key];
 
   if (!mode) {
-    await message.reply(`Usage: \`${config.commandPrefix}loop <off|song|queue>\``);
+    await message.reply(`ใช้แบบนี้ฮะ: \`${config.commandPrefix}loop <off|song|queue>\``);
     return;
   }
 
@@ -121,31 +125,31 @@ async function runLoop(message: Message, arg: string): Promise<void> {
   player.setLoop(mode);
 
   const labels: Record<LoopMode, string> = {
-    none: "off",
-    song: "current song",
-    queue: "whole queue",
+    none: "ปิดฮะ",
+    song: "แค่เพลงปัจจุบันฮะ",
+    queue: "เล่นซ้ำคิวทั้งหมดฮะ",
   };
 
-  await message.reply(`Loop mode set to **${labels[mode]}**.`);
+  await message.reply(`ตอนนี้ Loop mode คือ **${labels[mode]}**.`);
 }
 
 async function runLeave(message: Message): Promise<void> {
   const player = playerManager.get(message.guildId!);
 
   if (!player) {
-    await message.reply("I'm not playing anything.");
+    await message.reply("ไม่ได้เล่นอะไรฮะ");
     return;
   }
 
   await playerManager.remove(message.guildId!);
-  await message.reply("Stopped playback, cleared the queue, and left the voice channel.");
+  await message.reply("หยุดเล่นแล้ว, ล้างคิวแล้ว, และออกจากช่องเสียงแล้วฮะ");
 }
 
 async function runList(message: Message): Promise<void> {
   const player = playerManager.get(message.guildId!);
 
   if (!player || (!player.getStatus().current && player.getStatus().queue.length === 0)) {
-    await message.reply("The queue is empty.");
+    await message.reply("คิวว่าง ฮะ");
     return;
   }
 
@@ -153,20 +157,25 @@ async function runList(message: Message): Promise<void> {
 
   const lines: string[] = [];
   if (current) {
-    lines.push(`**Now Playing:** ${current.title} \`[${formatDuration(current.durationSeconds)}]\` — requested by ${current.requestedBy}`);
+    lines.push(`**ตอนนี้กำลังเล่น:** ${current.title} \`[${formatDuration(current.durationSeconds)}]\` — คนขอ: ${current.requestedBy}`);
   }
 
   if (queue.length > 0) {
-    lines.push("", "**Up Next:**");
+    lines.push("", "**อ่ะต่อไป:**");
     queue.slice(0, 15).forEach((track, index) => {
       lines.push(`${index + 1}. ${track.title} \`[${formatDuration(track.durationSeconds)}]\` — ${track.requestedBy}`);
     });
     if (queue.length > 15) {
-      lines.push(`...and ${queue.length - 15} more.`);
+      lines.push(`...อีก ${queue.length - 15} คิว`);
     }
   }
 
-  lines.push("", `Loop mode: **${loop}**`);
+  const loopLabels: Record<string, string> = {
+    none: "ปิดฮะ",
+    song: "แค่เพลงปัจจุบันฮะ",
+    queue: "เล่นซ้ำคิวทั้งหมดฮะ",
+  };
+  lines.push("", `Loop mode ตอนนี้: **${loopLabels[loop] ?? loop}**`);
 
   await message.reply(lines.join("\n"));
 }

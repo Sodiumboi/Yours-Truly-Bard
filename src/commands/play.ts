@@ -10,9 +10,9 @@ import type { Command } from "./Command";
 const command: Command = {
   data: new SlashCommandBuilder()
     .setName("play")
-    .setDescription("Play a song or queue a playlist from a URL")
+    .setDescription("เล่นเพลง หรือคิว playlist จาก URL ฮะ")
     .addStringOption((option) =>
-      option.setName("url").setDescription("YouTube video or playlist URL").setRequired(true),
+      option.setName("url").setDescription("YouTube video หรือ playlist URL ฮะ").setRequired(true),
     ),
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -32,13 +32,17 @@ const command: Command = {
       const track = await fetchSingleVideoMetadata(url, interaction.user.toString());
       const player = playerManager.getOrCreate(interaction.guildId!);
 
+      if (interaction.channel?.isSendable()) {
+        player.setNotifyChannel(interaction.channel);
+      }
+
       await player.connect(channel);
       await player.enqueue([track]);
 
-      await interaction.editReply(`Queued **${track.title}**.`);
+      await interaction.editReply(`ตอนนี้กำลังเล่น **${track.title}** ฮะ`);
     } catch (err) {
       logger.error({ err, url }, "Failed to queue track");
-      await interaction.editReply("Couldn't fetch that URL. Double-check it's a valid, public video link.");
+      await interaction.editReply("เจ๊งฮะ เปิดลิงค์ไม่ได้ฮะ เหมือนจะเป็นลิงค์ส่วนตัวหรือไม่สามารถเข้าถึงได้ฮะ");
     }
   },
 };

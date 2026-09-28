@@ -4,18 +4,18 @@ import { playerManager } from "../audio/PlayerManager";
 import type { Command } from "./Command";
 
 const command: Command = {
-  data: new SlashCommandBuilder().setName("stop").setDescription("Stop playback, clear the queue, and leave the voice channel"),
+  data: new SlashCommandBuilder().setName("stop").setDescription("หยุดเล่นแล้ว, ล้างคิวแล้ว, และออกจากช่องเสียงแล้วฮะ"),
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const player = playerManager.get(interaction.guildId!);
 
     if (!player) {
-      await interaction.reply({ content: "I'm not playing anything.", ephemeral: true });
+      await interaction.reply({ content: "ไม่ได้เล่นอะไรฮะ", ephemeral: true });
       return;
     }
 
     await playerManager.remove(interaction.guildId!);
-    await interaction.reply("Stopped playback, cleared the queue, and left the voice channel.");
+    await interaction.reply("หยุดเล่นแล้ว, ล้างคิวแล้ว, และออกจากช่องเสียงแล้วฮะ");
   },
 };
 

@@ -19,8 +19,8 @@ const PROMPT_TIMEOUT_MS = 60_000;
 function buildPromptComponents() {
   return [
     new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder().setCustomId(FIRST_SONG_ID).setLabel("Play first song only").setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId(ENTIRE_PLAYLIST_ID).setLabel("Load entire playlist").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(FIRST_SONG_ID).setLabel("เล่นแค่เพลงแรกฮะ").setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId(ENTIRE_PLAYLIST_ID).setLabel("โหลดทั้ง Playlist เลยฮะ").setStyle(ButtonStyle.Secondary),
     ),
   ];
 }
@@ -54,11 +54,14 @@ async function runPlaylistFlow(
       filter: (btn) => btn.user.id === userId,
     });
   } catch {
-    await editResult("Playlist prompt timed out.");
+    await editResult("หมดเวลาเลือกแล้วฮะ ลองใหม่อีกทีนะ");
     return;
   }
 
   const player = playerManager.getOrCreate(guildId);
+  if (promptMessage.channel.isSendable()) {
+    player.setNotifyChannel(promptMessage.channel);
+  }
 
   try {
     await choice.deferUpdate();
@@ -67,14 +70,14 @@ async function runPlaylistFlow(
       const track = await fetchSingleVideoMetadata(url, requestedBy);
       await player.connect(channel);
       await player.enqueue([track]);
-      await editResult(`Queued **${track.title}** (playlist link, first song only).`);
+      await editResult(`คิว **${track.title}** ไว้แล้วฮะ (จากลิงค์ playlist เอาแค่เพลงแรก)`);
       return;
     }
 
     // Entire playlist: metadata only, no downloads here.
     const entries = await fetchPlaylistEntries(url);
     if (entries.length === 0) {
-      await editResult("Couldn't find any videos in that playlist.");
+      await editResult("หาวิดีโอใน playlist นั้นไม่เจอเลยฮะ");
       return;
     }
 
@@ -88,12 +91,10 @@ async function runPlaylistFlow(
     await player.connect(channel);
     await player.enqueue(tracks);
 
-    await editResult(
-      `Queued **${tracks.length}** songs from the playlist. Downloads happen one track ahead as playback progresses.`,
-    );
+    await editResult(`คิวเพลงจาก playlist ไว้ **${tracks.length}** เพลงแล้วฮะ ระบบจะโหลดทีละเพลงล่วงหน้านะฮะ`);
   } catch (err) {
     logger.error({ err, url }, "Failed to handle playlist button choice");
-    await editResult("Something went wrong loading that playlist.").catch(() => {});
+    await editResult("เจ๊งฮะ โหลด playlist ไม่ได้").catch(() => {});
   }
 }
 
@@ -104,7 +105,7 @@ export async function handlePlaylistUrl(
   channel: VoiceBasedChannel,
 ): Promise<void> {
   const promptMessage = await interaction.reply({
-    content: "This URL is a playlist. How would you like to queue it?",
+    content: "ลิงค์นี้เป็น Playlist ฮะ อยากให้คิวแบบไหนดี?",
     components: buildPromptComponents(),
     fetchReply: true,
   });
@@ -125,7 +126,7 @@ export async function handlePlaylistUrl(
 /** Prefix-command entry point (`b!p <playlist url>`). */
 export async function handlePlaylistUrlMessage(message: Message, url: string, channel: VoiceBasedChannel): Promise<void> {
   const promptMessage = await message.reply({
-    content: "This URL is a playlist. How would you like to queue it?",
+    content: "ลิงค์นี้เป็น Playlist ฮะ อยากให้คิวแบบไหนดี?",
     components: buildPromptComponents(),
   });
 

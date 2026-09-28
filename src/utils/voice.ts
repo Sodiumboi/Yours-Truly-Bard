@@ -12,7 +12,7 @@ export async function requireVoiceChannel(
 
   if (!channel) {
     await interaction.reply({
-      content: "You need to be in a voice channel to use this command.",
+      content: "ไปอยู่ในห้องก่อนได้มั้ยฮะ ต้องอยู่ในห้องเสียงก่อนถึงจะใช้คำสั่งนี้ได้ฮะ",
       ephemeral: true,
     });
     return null;
@@ -21,7 +21,7 @@ export async function requireVoiceChannel(
   const permissions = channel.permissionsFor(interaction.client.user);
   if (!permissions?.has(["Connect", "Speak"])) {
     await interaction.reply({
-      content: `I don't have permission to join or speak in ${channel.name}.`,
+      content: `เข้าห้อง ${channel.name} ไม่ได้ฮะ สิทธิ์ไม่พอ ลองเช็ค permission ให้ Bard หน่อยนะฮะ`,
       ephemeral: true,
     });
     return null;
@@ -40,13 +40,13 @@ export async function requireVoiceChannelFromMessage(message: Message): Promise<
   const channel = member?.voice.channel ?? null;
 
   if (!channel) {
-    await message.reply("You need to be in a voice channel to use this command.");
+    await message.reply("ไปอยู่ในห้องก่อนได้มั้ยฮะ ต้องอยู่ในห้องเสียงก่อนถึงจะใช้คำสั่งนี้ได้ฮะ");
     return null;
   }
 
   const permissions = channel.permissionsFor(message.client.user);
   if (!permissions?.has(["Connect", "Speak"])) {
-    await message.reply(`I don't have permission to join or speak in ${channel.name}.`);
+    await message.reply(`เข้าห้อง ${channel.name} ไม่ได้ฮะ สิทธิ์ไม่พอ ลองเช็ค permission ให้ Bard หน่อยนะฮะ`);
     return null;
   }
 

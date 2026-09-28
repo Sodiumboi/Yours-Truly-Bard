@@ -11,7 +11,7 @@ import {
   VoiceConnectionStatus,
   entersState,
 } from "@discordjs/voice";
-import type { VoiceBasedChannel } from "discord.js";
+import type { SendableChannels, VoiceBasedChannel } from "discord.js";
 import { deleteTrackFile, downloadTrackAudio } from "./downloader";
 import { logger } from "../logger";
 import { config } from "../config";
@@ -44,6 +44,9 @@ export class GuildMusicPlayer {
   private prefetchInFlight: Promise<void> | null = null;
 
   private loopMode: LoopMode = "none";
+
+  /** Channel to post housekeeping notices (e.g. auto-leave) into. Updated on each command. */
+  private notifyChannel: SendableChannels | null = null;
 
   /** Set while intentionally tearing down, so the idle handler doesn't try to advance the queue. */
   private stopping = false;
@@ -123,6 +126,11 @@ export class GuildMusicPlayer {
 
   get loop(): LoopMode {
     return this.loopMode;
+  }
+
+  /** Records where to post housekeeping notices (e.g. auto-leave on inactivity). */
+  setNotifyChannel(channel: SendableChannels | null): void {
+    this.notifyChannel = channel;
   }
 
   setLoop(mode: LoopMode): void {
@@ -279,6 +287,11 @@ export class GuildMusicPlayer {
     this.disconnectTimer = setTimeout(() => {
       if (!this.hasActivity()) {
         logger.info({ guildId: this.guildId }, "Idle timeout reached, leaving voice channel");
+        this.notifyChannel
+          ?.send("Bard ขอตัวก่อน ไม่มีเพลงให้เล่นมา 5 นาที แล้วเจอกัน~")
+          .catch((err) => {
+            logger.warn({ err, guildId: this.guildId }, "Failed to send auto-leave notice");
+          });
         void this.stop();
       }
     }, 5 * 60_000);

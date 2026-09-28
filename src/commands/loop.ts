@@ -7,16 +7,16 @@ import type { Command } from "./Command";
 const command: Command = {
   data: new SlashCommandBuilder()
     .setName("loop")
-    .setDescription("Set the loop mode")
+    .setDescription("ตั้ง Loop mode ฮะ")
     .addStringOption((option) =>
       option
         .setName("mode")
-        .setDescription("Loop mode")
+        .setDescription("จะให้ loop แบบไหนฮะ")
         .setRequired(true)
         .addChoices(
-          { name: "Off", value: "none" },
-          { name: "Song (repeat current track)", value: "song" },
-          { name: "Queue (requeue tracks after they finish)", value: "queue" },
+          { name: "ปิดฮะ", value: "none" },
+          { name: "Song (เล่นซ้ำแค่เพลงปัจจุบันฮะ)", value: "song" },
+          { name: "Queue (เล่นซ้ำคิวทั้งหมดฮะ)", value: "queue" },
         ),
     ),
 
@@ -27,12 +27,12 @@ const command: Command = {
     player.setLoop(mode);
 
     const labels: Record<LoopMode, string> = {
-      none: "off",
-      song: "current song",
-      queue: "whole queue",
+      none: "ปิดฮะ",
+      song: "แค่เพลงปัจจุบันฮะ",
+      queue: "เล่นซ้ำคิวทั้งหมดฮะ",
     };
 
-    await interaction.reply(`Loop mode set to **${labels[mode]}**.`);
+    await interaction.reply(`ตอนนี้ Loop mode คือ **${labels[mode]}**.`);
   },
 };
 
