@@ -1,0 +1,27 @@
+services:
+  music-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: discord-music-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      TEMP_DIR: /app/temp
+    volumes:
+      # Bind-mounted (not a named volume) so it's easy to inspect on the
+      # Proxmox host and survives `docker compose down`, but files are still
+      # short-lived: the download -> play -> delete cycle keeps this folder
+      # near-empty at steady state (current track + one pre-fetched track).
+      - ./temp:/app/temp
+    # Tighten this further (e.g. drop more capabilities) once you've
+    # confirmed the bot runs cleanly in your environment.
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
